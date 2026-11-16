@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>已发布观测 — 任务 #{{ job.id }}</title>
+<style>
+ body{font-family:system-ui,"Noto Sans CJK SC",sans-serif;margin:2rem;color:#222}
+ table{border-collapse:collapse;margin-top:1rem}
+ th,td{border:1px solid #ccc;padding:.3rem .7rem;font-size:.9rem}
+ th{background:#f0f4f8}
+ code{background:#f3f4f6;padding:0 .3rem}
+</style>
+</head>
+<body>
+<h1>已发布观测 — 任务 #{{ job.id }}</h1>
+<p><a href="{{ url_for('index') }}">← 返回任务列表</a></p>
+<ul>
+ <li>源：<code>{{ job.url }}</code></li>
+ <li>版本 ETag：<code>{{ obs.etag }}</code></li>
+ <li>行数：{{ obs.row_count }}；区间：{{ obs.first_ts }} ~ {{ obs.last_ts }}</li>
+ <li>发布时间：{{ obs.published_at }}</li>
+</ul>
+<table>
+{% for r in rows %}
+<tr>{% for c in r %}<td>{{ c }}</td>{% endfor %}</tr>
+{% endfor %}
+</table>
+</body>
+</html>

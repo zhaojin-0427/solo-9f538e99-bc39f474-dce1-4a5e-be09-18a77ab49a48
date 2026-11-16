@@ -1,0 +1,17 @@
+services:
+  app:
+    build: ./app
+    ports:
+      - "8080:8080"
+    environment:
+      SAMPLE_SOURCE_URL: http://source:9000/tide.csv
+    volumes:
+      - appdata:/data        # 断点与 .part 持久化，容器重启后续传
+    depends_on:
+      - source
+  source:
+    build: ./source
+    ports:
+      - "9000:9000"
+volumes:
+  appdata:

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>潮位补采台</title>
+{% if any_running %}<meta http-equiv="refresh" content="2">{% endif %}
+<style>
+ body{font-family:system-ui,"Noto Sans CJK SC",sans-serif;margin:2rem;color:#222}
+ table{border-collapse:collapse;width:100%;margin-top:1rem}
+ th,td{border:1px solid #ccc;padding:.35rem .6rem;font-size:.9rem;text-align:left}
+ th{background:#f0f4f8}
+ .bar{background:#e5e7eb;border-radius:4px;height:14px;min-width:120px}
+ .bar>div{background:#2563eb;height:100%;border-radius:4px}
+ .ok{color:#047857}.error{color:#b91c1c}
+ .st-done{color:#047857;font-weight:600}.st-failed{color:#b91c1c}
+ .st-interrupted{color:#b45309}.st-running{color:#1d4ed8}
+ form.inline{display:inline}
+ input[type=text]{width:26rem;padding:.3rem}
+ button{padding:.3rem .8rem;cursor:pointer}
+ .flash-ok{background:#ecfdf5;border:1px solid #6ee7b7;padding:.4rem .8rem;margin:.3rem 0}
+ .flash-error{background:#fef2f2;border:1px solid #fca5a5;padding:.4rem .8rem;margin:.3rem 0}
+ code{background:#f3f4f6;padding:0 .3rem}
+</style>
+</head>
+<body>
+<h1>潮位补采台</h1>
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, m in msgs %}<div class="flash-{{cat}}">{{m}}</div>{% endfor %}
+{% endwith %}
+<form method="post" action="{{ url_for('create_and_start') }}">
+  源 URL：<input type="text" name="url" value="{{ sample_url }}" placeholder="http://source:9000/tide.csv" required>
+  <button type="submit">启动 / 继续采集</button>
+</form>
+<p><small>断网或重启后再次点击即可从已确认字节续传；源换版或忽略 Range 时会自动舍弃旧前缀整体重收。只有整份到齐且通过 CSV 校验才替换可用观测。</small></p>
+<table>
+<tr><th>#</th><th>源 URL</th><th>状态</th><th>进度（已确认/总长）</th><th>ETag</th><th>信息</th><th>已发布观测</th><th>操作</th></tr>
+{% for j in jobs %}
+<tr>
+ <td>{{ j.id }}</td>
+ <td><code>{{ j.url }}</code></td>
+ <td class="st-{{ j.status }}">{{ j.status }}</td>
+ <td>
+   {% set total = j.total_size %}
+   {% if total > 0 %}
+     {% set pct = (100 * j.confirmed_bytes / total) | round(1) %}
+     <div class="bar"><div style="width:{{pct}}%"></div></div>
+     {{ j.confirmed_bytes }} / {{ total }} B ({{pct}}%)
+   {% else %}
+     {{ j.confirmed_bytes }} / ?
+   {% endif %}
+ </td>
+ <td><code>{{ j.etag or '—' }}</code></td>
+ <td>{{ j.message }}</td>
+ <td>
+   {% set o = obs[j.url] %}
+   {% if o %}
+     <a href="{{ url_for('observation', job_id=j.id) }}">{{ o.row_count }} 行</a>
+     ({{ o.first_ts }} ~ {{ o.last_ts }})
+     <a href="{{ url_for('observation_csv', job_id=j.id) }}">CSV</a>
+   {% else %}—{% endif %}
+ </td>
+ <td>
+   <form class="inline" method="post" action="{{ url_for('start', job_id=j.id) }}"><button>启动/继续</button></form>
+   <form class="inline" method="post" action="{{ url_for('reset', job_id=j.id) }}"><button>重置断点</button></form>
+ </td>
+</tr>
+{% endfor %}
+</table>
+</body>
+</html>
